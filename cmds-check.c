@@ -5969,6 +5969,10 @@ static struct data_backref *alloc_data_backref(struct extent_record *rec,
 	if (max_size > rec->max_size) {
                 RECORD(MAX_SIZE, "Data backref: Set max size for %p from %lu to %lu",
                        rec, rec->max_size, max_size);
+                if (!max_size)
+                       RECORD(MAX_SIZE_ZERO,
+                              "Data backref: Set null max size for %p from %lu to %lu",
+                              rec, rec->max_size, max_size);
 		rec->max_size = max_size;
         }
 	return ref;
@@ -6042,6 +6046,9 @@ static int add_extent_rec_nolookup(struct cache_tree *extent_cache,
 	rec->max_size = tmpl->max_size;
         RECORD(MAX_SIZE, "Set max size %lu for rec %p from tmpl %p",
                tmpl->max_size, rec, tmpl);
+        if (!rec->max_size)
+            RECORD(MAX_SIZE_ZERO, "Set max size %lu for rec %p from tmpl %p",
+                   tmpl->max_size, rec, tmpl);
 	rec->nr = max(tmpl->nr, tmpl->max_size);
 	rec->found_rec = tmpl->found_rec;
 	rec->content_checked = tmpl->content_checked;
@@ -6129,6 +6136,8 @@ static int add_extent_rec(struct cache_tree *extent_cache,
 				tmp->max_size = tmpl->max_size;
                                 RECORD(MAX_SIZE, "Add extent rec %p max_size %lu tmpl %p",
                                        tmp, tmp->max_size, tmpl);
+                                RECORD(MAX_SIZE_ZERO, "Add extent rec %p max_size %lu tmpl %p",
+                                       tmp, tmp->max_size, tmpl);
 				tmp->nr = tmpl->nr;
 				tmp->found_rec = 1;
 				tmp->metadata = tmpl->metadata;
@@ -6165,6 +6174,9 @@ static int add_extent_rec(struct cache_tree *extent_cache,
 			rec->parent_generation = tmpl->parent_generation;
 		if (rec->max_size < tmpl->max_size) {
                         RECORD(MAX_SIZE, "Add extent: Set max size for %p from %lu to %lu",
+                               rec, rec->max_size, tmpl->max_size);
+                        if (!tmpl->max_size)
+                            RECORD(MAX_SIZE_ZERO, "Add extent: Set max size for %p from %lu to %lu",
                                rec, rec->max_size, tmpl->max_size);
                         rec->max_size = tmpl->max_size;
                 }
@@ -6275,6 +6287,9 @@ static int add_data_backref(struct cache_tree *extent_cache, u64 bytenr,
 		tmpl.max_size = max_size;
                 RECORD(MAX_SIZE, "Add data backref, no cache for bytenr %lu max_size %lu",
                        bytenr, max_size);
+                if (!max_size)
+                    RECORD(MAX_SIZE_ZERO, "Add data backref, no cache for bytenr %lu max_size %lu",
+                           bytenr, max_size);
 
 		ret = add_extent_rec_nolookup(extent_cache, &tmpl);
                 RECORD(EXTENTS, "Add extent rec to %p rc %d", extent_cache, ret);
@@ -6292,6 +6307,10 @@ static int add_data_backref(struct cache_tree *extent_cache, u64 bytenr,
 	if (rec->max_size < max_size) {
                 RECORD(MAX_SIZE, "Add data backref: Set max size for %p from %lu to %lu",
                        rec, rec->max_size, max_size);
+                if (!max_size)
+                    RECORD(MAX_SIZE_ZERO, "Add data backref: Set max size for %p from %lu to %lu",
+                           rec, rec->max_size, max_size);
+                    
 		rec->max_size = max_size;
         }
 	/*
@@ -6810,6 +6829,9 @@ static int process_extent_item(struct btrfs_root *root,
 		tmpl.max_size = num_bytes;
                 RECORD(MAX_SIZE, "Process extent small max_size %lu for extent cache %p",
                        tmpl.max_size, extent_cache);
+                if (!num_bytes)
+                    RECORD(MAX_SIZE_ZERO, "Process extent small max_size %lu for extent cache %p",
+                           tmpl.max_size, extent_cache);
 
 		return add_extent_rec(extent_cache, &tmpl);
 	}
@@ -6840,6 +6862,9 @@ static int process_extent_item(struct btrfs_root *root,
 	tmpl.max_size = num_bytes;
         RECORD(MAX_SIZE, "Process extent item max_size %lu for extent cache %p",
                tmpl.max_size, extent_cache);
+        if (!num_bytes)
+            RECORD(MAX_SIZE_ZERO, "Process extent item max_size %lu for extent cache %p",
+                   tmpl.max_size, extent_cache);
 	add_extent_rec(extent_cache, &tmpl);
 
 	ptr = (unsigned long)(ei + 1);
@@ -7886,6 +7911,9 @@ static int run_next_block(struct btrfs_root *root,
 			tmpl.max_size = size;
                         RECORD(MAX_SIZE, "Add %d/%d max_size %lu for extent cache %p",
                                i, nritems, tmpl.max_size, extent_cache);
+                        if (!size)
+                            RECORD(MAX_SIZE_ZERO, "Add %d/%d max_size %lu for extent cache %p",
+                                   i, nritems, tmpl.max_size, extent_cache);
 			ret = add_extent_rec(extent_cache, &tmpl);
 			if (ret < 0)
 				goto out;
@@ -7946,6 +7974,9 @@ static int add_root_to_pending(struct extent_buffer *buf,
 	tmpl.max_size = buf->len;
         RECORD(MAX_SIZE, "Add root to pending max_size %lu for extent cache %p",
                tmpl.max_size, extent_cache);
+        if (!tmpl.max_size)
+            RECORD(MAX_SIZE_ZERO, "Add root to pending max_size %lu for extent cache %p",
+                   tmpl.max_size, extent_cache);
 	add_extent_rec(extent_cache, &tmpl);
 
 	if (objectid == BTRFS_TREE_RELOC_OBJECTID ||
@@ -8132,7 +8163,8 @@ static int record_extent(struct btrfs_trans_handle *trans,
                 u64 max_size = rec->max_size;
 		rec->max_size = max_t(u64, rec->max_size,
                                       info->extent_root->nodesize);
-                RECORD(MAX_SIZE, "Record extent: Set max size for %p from %lu to %lu",
+                if (!rec->max_size)
+                    RECORD(MAX_SIZE_ZERO, "Record extent: Set max size for %p from %lu to %lu",
                        rec, max_size, rec->max_size);
         }
 
