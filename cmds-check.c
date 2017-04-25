@@ -43,6 +43,8 @@
 #include "kernel-shared/ulist.h"
 #include "hash.h"
 #include "help.h"
+#include "recorder/recorder.h"
+
 
 enum task_position {
 	TASK_EXTENTS,
@@ -5964,8 +5966,11 @@ static struct data_backref *alloc_data_backref(struct extent_record *rec,
 	ref->found_ref = 0;
 	ref->num_refs = 0;
 	list_add_tail(&ref->node.list, &rec->backrefs);
-	if (max_size > rec->max_size)
+	if (max_size > rec->max_size) {
+                RECORD(MAX_SIZE, "Data backref: Set max size for %p from %lu to %lu",
+                       rec, rec->max_size, max_size);
 		rec->max_size = max_size;
+        }
 	return ref;
 }
 
@@ -6035,6 +6040,8 @@ static int add_extent_rec_nolookup(struct cache_tree *extent_cache,
 		return -ENOMEM;
 	rec->start = tmpl->start;
 	rec->max_size = tmpl->max_size;
+        RECORD(MAX_SIZE, "Set max size %lu for rec %p from tmpl %p",
+               tmpl->max_size, rec, tmpl);
 	rec->nr = max(tmpl->nr, tmpl->max_size);
 	rec->found_rec = tmpl->found_rec;
 	rec->content_checked = tmpl->content_checked;
@@ -6120,6 +6127,8 @@ static int add_extent_rec(struct cache_tree *extent_cache,
 					return -ENOMEM;
 				tmp->start = tmpl->start;
 				tmp->max_size = tmpl->max_size;
+                                RECORD(MAX_SIZE, "Add extent rec %p max_size %lu tmpl %p",
+                                       tmp, tmp->max_size, tmpl);
 				tmp->nr = tmpl->nr;
 				tmp->found_rec = 1;
 				tmp->metadata = tmpl->metadata;
@@ -6154,8 +6163,11 @@ static int add_extent_rec(struct cache_tree *extent_cache,
 				sizeof(tmpl->parent_key));
 		if (tmpl->parent_generation)
 			rec->parent_generation = tmpl->parent_generation;
-		if (rec->max_size < tmpl->max_size)
-			rec->max_size = tmpl->max_size;
+		if (rec->max_size < tmpl->max_size) {
+                        RECORD(MAX_SIZE, "Add extent: Set max size for %p from %lu to %lu",
+                               rec, rec->max_size, tmpl->max_size);
+                        rec->max_size = tmpl->max_size;
+                }
 
 		/*
 		 * A metadata extent can't cross stripe_len boundary, otherwise
@@ -6261,20 +6273,27 @@ static int add_data_backref(struct cache_tree *extent_cache, u64 bytenr,
 		tmpl.start = bytenr;
 		tmpl.nr = 1;
 		tmpl.max_size = max_size;
+                RECORD(MAX_SIZE, "Add data backref, no cache for bytenr %lu max_size %lu",
+                       bytenr, max_size);
 
 		ret = add_extent_rec_nolookup(extent_cache, &tmpl);
+                RECORD(EXTENTS, "Add extent rec to %p rc %d", extent_cache, ret);
 		if (ret)
 			return ret;
 
 		cache = lookup_cache_extent(extent_cache, bytenr, 1);
+                RECORD(EXTENTS, "Lookup cache %p in %p bytenr %lu",
+                       cache, extent_cache, bytenr);
 		if (!cache)
 			abort();
 	}
 
 	rec = container_of(cache, struct extent_record, cache);
-	if (rec->max_size < max_size)
+	if (rec->max_size < max_size) {
+                RECORD(MAX_SIZE, "Add data backref: Set max size for %p from %lu to %lu",
+                       rec, rec->max_size, max_size);
 		rec->max_size = max_size;
-
+        }
 	/*
 	 * If found_ref is set then max_size is the real size and must match the
 	 * existing refs.  So if we have already found a ref then we need to
@@ -6789,6 +6808,8 @@ static int process_extent_item(struct btrfs_root *root,
 		tmpl.metadata = metadata;
 		tmpl.found_rec = 1;
 		tmpl.max_size = num_bytes;
+                RECORD(MAX_SIZE, "Process extent small max_size %lu for extent cache %p",
+                       tmpl.max_size, extent_cache);
 
 		return add_extent_rec(extent_cache, &tmpl);
 	}
@@ -6817,6 +6838,8 @@ static int process_extent_item(struct btrfs_root *root,
 	tmpl.metadata = metadata;
 	tmpl.found_rec = 1;
 	tmpl.max_size = num_bytes;
+        RECORD(MAX_SIZE, "Process extent item max_size %lu for extent cache %p",
+               tmpl.max_size, extent_cache);
 	add_extent_rec(extent_cache, &tmpl);
 
 	ptr = (unsigned long)(ei + 1);
@@ -7861,6 +7884,8 @@ static int run_next_block(struct btrfs_root *root,
 			tmpl.refs = 1;
 			tmpl.metadata = 1;
 			tmpl.max_size = size;
+                        RECORD(MAX_SIZE, "Add %d/%d max_size %lu for extent cache %p",
+                               i, nritems, tmpl.max_size, extent_cache);
 			ret = add_extent_rec(extent_cache, &tmpl);
 			if (ret < 0)
 				goto out;
@@ -7919,6 +7944,8 @@ static int add_root_to_pending(struct extent_buffer *buf,
 	tmpl.refs = 1;
 	tmpl.metadata = 1;
 	tmpl.max_size = buf->len;
+        RECORD(MAX_SIZE, "Add root to pending max_size %lu for extent cache %p",
+               tmpl.max_size, extent_cache);
 	add_extent_rec(extent_cache, &tmpl);
 
 	if (objectid == BTRFS_TREE_RELOC_OBJECTID ||
@@ -8101,9 +8128,13 @@ static int record_extent(struct btrfs_trans_handle *trans,
 	struct data_backref *dback;
 	struct btrfs_tree_block_info *bi;
 
-	if (!back->is_data)
+	if (!back->is_data) {
+                u64 max_size = rec->max_size;
 		rec->max_size = max_t(u64, rec->max_size,
-				    info->extent_root->nodesize);
+                                      info->extent_root->nodesize);
+                RECORD(MAX_SIZE, "Record extent: Set max size for %p from %lu to %lu",
+                       rec, max_size, rec->max_size);
+        }
 
 	if (!allocated) {
 		u32 item_size = sizeof(*ei);
@@ -9244,6 +9275,7 @@ static int check_extent_refs(struct btrfs_root *root,
 	int ret = 0;
 	int had_dups = 0;
 
+        RECORD(CHECK, "Check extent root %p cache %p", root, extent_cache);
 	if (repair) {
 		/*
 		 * if we're doing a repair, we have to make sure
@@ -9252,8 +9284,11 @@ static int check_extent_refs(struct btrfs_root *root,
 		 * extents in the FS
 		 */
 		cache = search_cache_extent(extent_cache, 0);
+                RECORD(REPAIR, "Search cache %p start %lu size %lu",
+                       cache, cache ? cache->start : 0, cache ? cache->size : 0);
 		while(cache) {
 			rec = container_of(cache, struct extent_record, cache);
+                        RECORD(EXTENTS, "Container extent record %p for cache %p start %lu max_size %lu", rec, cache, rec->start, rec->max_size);
 			set_extent_dirty(root->fs_info->excluded_extents,
 					 rec->start,
 					 rec->start + rec->max_size - 1);
@@ -9262,6 +9297,8 @@ static int check_extent_refs(struct btrfs_root *root,
 
 		/* pin down all the corrupted blocks too */
 		cache = search_cache_extent(root->fs_info->corrupt_blocks, 0);
+                RECORD(CHECK, "Corrupted blocks cache %p start %lu size %lu",
+                       cache, cache ? cache->start : 0, cache ? cache->size : 0);
 		while(cache) {
 			set_extent_dirty(root->fs_info->excluded_extents,
 					 cache->start,

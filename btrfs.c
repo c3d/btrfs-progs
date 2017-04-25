@@ -24,6 +24,9 @@
 #include "utils.h"
 #include "help.h"
 
+#include "recorder/recorder.h"
+
+
 static const char * const btrfs_cmd_group_usage[] = {
 	"btrfs [--help] [--version] <group> [<group>...] <command> [<args>]",
 	NULL
