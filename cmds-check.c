@@ -6136,8 +6136,9 @@ static int add_extent_rec(struct cache_tree *extent_cache,
 				tmp->max_size = tmpl->max_size;
                                 RECORD(MAX_SIZE, "Add extent rec %p max_size %lu tmpl %p",
                                        tmp, tmp->max_size, tmpl);
-                                RECORD(MAX_SIZE_ZERO, "Add extent rec %p max_size %lu tmpl %p",
-                                       tmp, tmp->max_size, tmpl);
+                                if (!tmpl->max_size)
+                                    RECORD(MAX_SIZE_ZERO, "Add extent rec %p max_size %lu tmpl %p",
+                                           tmp, tmp->max_size, tmpl);
 				tmp->nr = tmpl->nr;
 				tmp->found_rec = 1;
 				tmp->metadata = tmpl->metadata;
