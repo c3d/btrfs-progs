@@ -31,6 +31,7 @@
 #include <stdint.h>
 
 #include <features.h>
+#include <recorder/recorder.h>
 
 #ifndef __GLIBC__
 #ifndef BTRFS_DISABLE_BACKTRACE
@@ -109,6 +110,7 @@ static inline void bugon_trace(const char *assertion, const char *filename,
 	fprintf(stderr,
 		"%s:%d: %s: BUG_ON `%s` triggered, value %ld\n",
 		filename, line, func, assertion, val);
+        recorder_dump();
 #ifndef BTRFS_DISABLE_BACKTRACE
 	print_trace();
 #endif

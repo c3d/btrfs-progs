@@ -1,0 +1,30 @@
+// ****************************************************************************
+//  recorder.tbl                                                 TaoJS project 
+// ****************************************************************************
+// 
+//   File Description:
+// 
+//      List of the recorders, this one is for the recorder test.
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// ****************************************************************************
+//  (C) 2017 Christophe de Dinechin <christophe@dinechin.org>
+// This software is licensed under the GNU General Public License v3
+// See file COPYING for details.
+// ****************************************************************************
+
+RECORDER(MAIN,      64);
+RECORDER(CHECK,   1024);
+RECORDER(REPAIR,  1024);
+RECORDER(EXTENTS, 1024);
+RECORDER(MAX_SIZE,1024);
+RECORDER(MAX_SIZE_ZERO,1024);
+
+
+#undef RECORDER

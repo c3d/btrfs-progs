@@ -257,11 +257,11 @@ endif
 	$(Q)$(CC) $(CFLAGS) -c $< -o $@ $($(subst -,_,$(@:%.o=%)-cflags)) \
 		$($(subst -,_,btrfs-$(@:%/$(notdir $@)=%)-cflags))
 
-%.o: recorder/%.cpp
+%.o: recorder/%.c
 	@$(check_echo) "    [SP]     $<"
 	$(Q)$(check) $(CFLAGS) $(CHECKER_FLAGS) $<
-	@echo "    [C++]    $@"
-	$(Q)$(CXX) $(CXXFLAGS) -I. -c $< -o $@ $($(subst -,_,$(@:%.o=%)-cflags)) \
+	@echo "    [CCC]    $@"
+	$(Q)$(CC) $(CFLAGS) -I. -c $< -o $@ $($(subst -,_,$(@:%.o=%)-cflags)) \
 		$($(subst -,_,btrfs-$(@:%/$(notdir $@)=%)-cflags))
 
 %.static.o: %.c
@@ -349,25 +349,25 @@ $(lib_links):
 
 btrfs-%.static: btrfs-%.static.o $(static_objects) $(patsubst %.o,%.static.o,$(standalone_deps)) $(static_libbtrfs_objects)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(STATIC_CFLAGS) -o $@ $@.o $(static_objects) \
+	$(Q)$(CC) $(STATIC_CFLAGS) -o $@ $@.o $(static_objects) \
 		$(patsubst %.o, %.static.o, $($(subst -,_,$(subst .static,,$@)-objects))) \
 		$(static_libbtrfs_objects) $(STATIC_LDFLAGS) \
 		$($(subst -,_,$(subst .static,,$@)-libs)) $(STATIC_LIBS)
 
 btrfs-%: btrfs-%.o $(objects) $(standalone_deps) $(libs_static)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $(objects) $@.o \
+	$(Q)$(CC) $(CFLAGS) -o $@ $(objects) $@.o \
 		$($(subst -,_,$@-objects)) \
 		$(libs_static) \
 		$(LDFLAGS) $(LIBS) $($(subst -,_,$@-libs))
 
 btrfs: btrfs.o $(objects) $(cmds_objects) $(libs_static)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBS_COMP)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBS_COMP)
 
 btrfs.static: btrfs.static.o $(static_objects) $(static_cmds_objects) $(static_libbtrfs_objects)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS) $(STATIC_LIBS_COMP)
+	$(Q)$(CC) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS) $(STATIC_LIBS_COMP)
 
 # For backward compatibility, 'btrfs' changes behaviour to fsck if it's named 'btrfsck'
 btrfsck: btrfs
@@ -380,71 +380,71 @@ btrfsck.static: btrfs.static
 
 mkfs.btrfs: $(mkfs_objects) $(objects) $(libs_static)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 mkfs.btrfs.static: $(static_mkfs_objects) $(static_objects) $(static_libbtrfs_objects)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS)
+	$(Q)$(CC) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS)
 
 btrfstune: btrfstune.o $(objects) $(libs_static)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 btrfstune.static: btrfstune.static.o $(static_objects) $(static_libbtrfs_objects)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS)
+	$(Q)$(CC) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS)
 
 btrfs-image: image/main.o $(objects) $(libs_static)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBS_COMP)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBS_COMP)
 
 btrfs-image.static: image/main.static.o $(static_objects) $(static_libbtrfs_objects)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS) $(STATIC_LIBS_COMP)
+	$(Q)$(CC) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(STATIC_LIBS) $(STATIC_LIBS_COMP)
 
 btrfs-convert: $(convert_objects) $(objects) $(libs_static)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(btrfs_convert_libs) $(LIBS)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(btrfs_convert_libs) $(LIBS)
 
 btrfs-convert.static: $(static_convert_objects) $(static_objects) $(static_libbtrfs_objects)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(btrfs_convert_libs) $(STATIC_LIBS)
+	$(Q)$(CC) $(STATIC_CFLAGS) -o $@ $^ $(STATIC_LDFLAGS) $(btrfs_convert_libs) $(STATIC_LIBS)
 
 dir-test: dir-test.o $(objects) $(libs)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 quick-test: quick-test.o $(objects) $(libs)
 	@echo "    [LD]     $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(Q)$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 ioctl-test.o: ioctl-test.c ioctl.h kerncompat.h ctree.h
 	@echo "    [CC]   $@"
-	$(Q)$(CXX) $(CFLAGS) -c $< -o $@
+	$(Q)$(CC) $(CFLAGS) -c $< -o $@
 
 ioctl-test-32.o: ioctl-test.c ioctl.h kerncompat.h ctree.h
 	@echo "    [CC32]   $@"
-	$(Q)$(CXX) $(CFLAGS) -m32 -c $< -o $@
+	$(Q)$(CC) $(CFLAGS) -m32 -c $< -o $@
 
 ioctl-test-64.o: ioctl-test.c ioctl.h kerncompat.h ctree.h
 	@echo "    [CC64]   $@"
-	$(Q)$(CXX) $(CFLAGS) -m64 -c $< -o $@
+	$(Q)$(CC) $(CFLAGS) -m64 -c $< -o $@
 
 ioctl-test: ioctl-test.o
 	@echo "    [LD]   $@"
-	$(Q)$(CXX) $(CFLAGS) -o $@ $< $(LDFLAGS)
+	$(Q)$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 	@echo "   ?[PAHOLE] $@.pahole"
 	-$(Q)pahole $@ > $@.pahole
 
 ioctl-test-32: ioctl-test-32.o
 	@echo "    [LD32]   $@"
-	$(Q)$(CXX) $(CFLAGS) -m32 -o $@ $< $(LDFLAGS)
+	$(Q)$(CC) $(CFLAGS) -m32 -o $@ $< $(LDFLAGS)
 	@echo "   ?[PAHOLE] $@.pahole"
 	-$(Q)pahole $@ > $@.pahole
 
 ioctl-test-64: ioctl-test-64.o
 	@echo "    [LD64]   $@"
-	$(Q)$(CXX) $(CFLAGS) -m64 -o $@ $< $(LDFLAGS)
+	$(Q)$(CC) $(CFLAGS) -m64 -o $@ $< $(LDFLAGS)
 	@echo "   ?[PAHOLE] $@.pahole"
 	-$(Q)pahole $@ > $@.pahole
 
@@ -458,7 +458,7 @@ library-test: library-test.c $(libs_shared)
 	@echo "    [TEST PREP]  $@"$(eval TMPD=$(shell mktemp -d))
 	$(Q)mkdir -p $(TMPD)/include/btrfs && \
 	cp $(libbtrfs_headers) $(TMPD)/include/btrfs && \
-	cd $(TMPD) && $(CXX) -I$(TMPD)/include -o $@ $(addprefix $(TOPDIR)/,$^) -Wl,-rpath=$(TOPDIR) -lbtrfs
+	cd $(TMPD) && $(CC) -I$(TMPD)/include -o $@ $(addprefix $(TOPDIR)/,$^) -Wl,-rpath=$(TOPDIR) -lbtrfs
 	@echo "    [TEST RUN]   $@"
 	$(Q)cd $(TMPD) && ./$@
 	@echo "    [TEST CLEAN] $@"
@@ -468,7 +468,7 @@ library-test.static: library-test.c $(libs_static)
 	@echo "    [TEST PREP]  $@"$(eval TMPD=$(shell mktemp -d))
 	$(Q)mkdir -p $(TMPD)/include/btrfs && \
 	cp $(libbtrfs_headers) $(TMPD)/include/btrfs && \
-	cd $(TMPD) && $(CXX) -I$(TMPD)/include -o $@ $(addprefix $(TOPDIR)/,$^) $(STATIC_LDFLAGS) $(STATIC_LIBS)
+	cd $(TMPD) && $(CC) -I$(TMPD)/include -o $@ $(addprefix $(TOPDIR)/,$^) $(STATIC_LDFLAGS) $(STATIC_LIBS)
 	@echo "    [TEST RUN]   $@"
 	$(Q)cd $(TMPD) && ./$@
 	@echo "    [TEST CLEAN] $@"
